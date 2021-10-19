@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - 6379:6379
+
+  mongodb:
+    image : mongo:5
+    container_name: mongodb
+    depends_on:
+      - redis
+    environment:
+    - PUID=1000
+    - PGID=1000
+    - MONGO_INITDB_DATABASE=gnap
+    volumes:
+    - ./data/mongodb/database:/data/db
+    - ./mongodb-init/:/docker-entrypoint-initdb.d/:ro
+    ports:
+    - 27017:27017
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+    - ./data/prometheus:/prometheus
+    ports:
+    - 9090:9090

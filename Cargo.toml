@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "errors",
+    "model",
+    "dao",
+    "serde_utils",
+    "tx_endpoint",
+]

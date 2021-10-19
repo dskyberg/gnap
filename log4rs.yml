@@ -1,0 +1,21 @@
+refresh_rate: 30 seconds
+appenders:
+  stdout:
+    kind: console
+    encoder:
+      kind: json
+  hyper:
+    kind: file
+    path: "log/warp.log"
+    encoder:
+      kind: json
+root:
+  level: debug
+  appenders:
+    - stdout
+loggers:
+  hyper:
+    level: debug
+    appenders:
+      - hyper
+    additive: false
