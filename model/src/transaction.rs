@@ -6,7 +6,6 @@ use serde::{Serialize, Deserialize};
 use serde_utils::vec_or_one::deser_one_as_vec;
 use redis::{RedisWrite, ToRedisArgs};
 
-
 /// AccessToken request flags.
 ///
 /// A set of flags that indicate desired
@@ -44,21 +43,22 @@ pub enum AccessTokenFlag {
     Split,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GNAPStandardAccess {
-    #[serde(rename = "type")]
-    pub access_type: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub actions: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub locations: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub datatypes: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub privileges: Option<Vec<String>>,
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+#[serde(untagged)]
+pub enum AccessRequest {
+    Reference(String),
+    Request{
+        #[serde(rename = "type")]
+        resource_type: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        actions: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        locations: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        data_types: Option<Vec<String>>
+        }
 }
+
 
 /// Access Token portion of a grant request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,7 +66,7 @@ pub struct AccessTokenRequest {
     /// Describes the rights that the
     /// client instance is requesting for one or more access tokens to be
     /// used at RS's.   This field is REQUIRED.  Section 8
-    pub access: Vec<GNAPStandardAccess>,
+    pub access: Vec<AccessRequest>,
     /// A unique name chosen by the client instance to refer
     /// to the resulting access token.  The value of this field is opaque
     /// to the AS.  If this field is included in the request, the AS MUST

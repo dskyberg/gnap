@@ -1,9 +1,12 @@
 use futures::stream::TryStreamExt;
-use mongodb::{options::ClientOptions, Client, Database};
+use mongodb::{bson::doc, options::ClientOptions, Client, Database};
 use std::env;
+use uuid::Uuid;
 
 use errors::GnapError;
 use model::transaction::TransactionOptions;
+use model::client::GnapClient;
+
 
 #[derive(Clone, Debug)]
 pub struct GnapDB {
@@ -42,6 +45,8 @@ impl GnapDB {
         }
     }
 
+    // Figure out how to break these out into separate mods, so this file
+    // is manageable.
     pub async fn fetch_grant_options(&self) -> Result<TransactionOptions, GnapError> {
         let mut cursor = self
             .database
@@ -54,6 +59,35 @@ impl GnapDB {
             Ok(Some(result)) => Ok(result),
             Ok(None) => Ok(TransactionOptions::new()),
             Err(e) => Err(GnapError::DatabaseError(e)),
+        }
+    }
+
+    // Client methods
+    pub async fn fetch_client_by_id(&self, id: &Uuid) -> Result<GnapClient, GnapError> {
+        let cursor = self
+            .database
+            .collection::<GnapClient>("clients")
+            .find_one(doc!{"client_id": &id.to_string()}, None)
+            .await
+            .map_err(GnapError::DatabaseError)?;
+
+        match cursor {
+            Some(result) => Ok(result),
+            None => Err(GnapError::NotFound),
+        }
+    }
+
+    pub async fn fetch_client_by_name(&self, name: &str) -> Result<GnapClient, GnapError> {
+        let cursor = self
+            .database
+            .collection::<GnapClient>("clients")
+            .find_one(doc!{"client_name": name}, None)
+            .await
+            .map_err(GnapError::DatabaseError)?;
+
+        match cursor {
+            Some(result) => Ok(result),
+            None => Err(GnapError::NotFound),
         }
     }
 }

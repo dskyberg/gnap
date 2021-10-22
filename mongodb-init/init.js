@@ -49,9 +49,18 @@ const config = [
     }
 ];
 
+const clients = [
+    {
+        client_id: "7e057b0c-17e8-4ab4-9260-2b33f32b2cce",
+        client_name: "test_client_1",
+        redirect_uris: ["localhost:8000"]
+    }
+]
+
 conn = new Mongo();
 db = conn.getDB("gnap");
 db.service_config.insertMany(config);
+db.clients.insertMany(clients);
 
 
 

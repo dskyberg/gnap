@@ -4,5 +4,5 @@ members = [
     "model",
     "dao",
     "serde_utils",
-    "tx_endpoint",
+    "as",
 ]

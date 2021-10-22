@@ -9,6 +9,8 @@ pub enum GnapError {
     MongoDataError(#[from] mongodb::bson::document::ValueAccessError),
     #[error("Cache error: {0}")]
     CacheError(#[from] redis::RedisError),
+    #[error("Not found error")]
+    NotFound,
     #[error("General error")]
     GeneralError
 }

@@ -2,7 +2,7 @@ use dotenv::dotenv;
 use std::env;
 use std::net::SocketAddr;
 use warp::{self, Filter};
-
+use get_if_addrs;
 //use log::{error, info, warn, LevelFilter};
 
 use log4rs;
@@ -11,6 +11,15 @@ use dao::Service;
 
 mod handlers;
 mod routes;
+
+fn get_ip() -> String {
+    let addrs = get_if_addrs::get_if_addrs().unwrap();
+   let ips = addrs.into_iter()
+    .filter(|n| n.name != "lo0")
+    .collect::<Vec<_>>();
+
+    format!(" {:?}", ips[0].addr.ip())
+}
 
 /// Crate main.
 /// The main service needs to be async, in order to leverage async services.
@@ -28,6 +37,8 @@ async fn main() {
         .parse()
         .expect("API_ADDRESS is invalid");
 
+    let ip = get_ip();
+    println!("Server is running on {:?}.  IP address is {}", api_address, ip);
     let service = Service::create().await;
 
     // Generate the routes collection.  to extend, just add more `.or(macro)` calls.

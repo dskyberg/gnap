@@ -1,5 +1,6 @@
 version: "3.8"
 services:
+
   redis:
     image: redis:alpine
     container_name: redis
@@ -22,10 +23,3 @@ services:
     - 27017:27017
     restart: unless-stopped
 
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    volumes:
-    - ./data/prometheus:/prometheus
-    ports:
-    - 9090:9090
