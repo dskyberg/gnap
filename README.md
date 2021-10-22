@@ -26,10 +26,9 @@ All model structs, for DAO persistence, and HTTP requests/responses.  This lib
 relies heavily on serde (serde_json) to serialize/deserialize.  The lib also
 leverages Redis to manage appropriate (de)serialization for the cache.
 
-### [tx_endpoiont](./tx_endpoint)
-The GNAP transaction endpoint service.  This service is built with Warp.
-The handlers only understand the data models as defined in the [model](./model) lib.
-
+### [as](./as)
+The GNAP Authorization Server.  This service is built with Warp.
+The handlers understand the data models as defined in the [model](./model) lib.
 
 ## Starting Mongo and Redis
 This service leverages MongoDB and Redis.  Both are run in Docker containers
@@ -78,14 +77,15 @@ API_ADDRESS=127.0.0.1:8000
 ````
 
 - Start the server
+from the top level workspace folder, run the following:
 
 ````bash
 > cargo run
 ````
 
-The service will run on localhost:8000
+The service will run on 0.0.0.0:8000.  You can change this by updating the [.env](./.env) file.
 
-## Accessing the Service
+## Interacting with the Service
 There is a Postman collection in the root folder.  Import that.
 
 
@@ -99,18 +99,18 @@ suggest avoiding - use post!!), the query params can be modeled via a `struct`
 as well.
 
 ### Step 2: Add the Routes
-The routes are defined in [tx_endpoint/src/routes](../tx_endpoint/src/routes).
+The routes are defined in [as/src/routes](./as/src/routes).
 You can bundle the routes in
 separate modules by adding additional files in this folder.
 
 ### Step 3: Add the Handlers
-The handlers are defined in [tx_endpoint/src/handlers](./tx_endpoint/src/handlers).
+The handlers are defined in [as/src/handlers](./as/src/handlers).
 Each handler sbould be defined to
 accept the `service` parameter (for access to the db client), and whatever body,
 path params, and query params managed by the route.
 
 ### Step 4:  Add the route to the routes method
 At the end of each route module, there is a `routes` function.  This function is
-called in [main](./tx_endpoint/src/main.rs) to construct the Warp routes.  Just
+called in [main](./as/src/main.rs) to construct the Warp routes.  Just
 follow the pattern to add your new route.
 
