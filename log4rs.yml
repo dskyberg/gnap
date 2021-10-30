@@ -9,13 +9,26 @@ appenders:
     path: "log/warp.log"
     encoder:
       kind: json
+  as:
+    kind: file
+    path: "log/as.log"
+    encoder:
+      kind: json
+
 root:
   level: debug
   appenders:
     - stdout
+
 loggers:
   hyper:
     level: debug
     appenders:
       - hyper
+    additive: false
+  as:
+    level: debug
+    appenders:
+      - as
+      - stdout
     additive: false

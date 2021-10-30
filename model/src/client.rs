@@ -1,12 +1,20 @@
 use crate::oauth::{AcrValueType, ApplicationType, GrantType, ResponseType, SubjectType};
-use errors::GnapError;
+use redis::{RedisWrite, ToRedisArgs};
 use jsonwebtoken::Algorithm;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use errors::GnapError;
+
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct GnapClientRequest {
+    pub redirect_uris: Vec<String>,
+    pub client_name: String,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GnapClient {
-    pub client_id: Option<Uuid>,
+    pub client_id: Uuid,
     pub redirect_uris: Vec<String>,
     pub client_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -70,7 +78,7 @@ pub struct GnapClient {
 impl GnapClient {
     pub fn new(redirect_uris: Vec<String>, client_name: String) -> Self {
         Self {
-            client_id: Some(GnapClient::create_id()),
+            client_id: GnapClient::create_id(),
             redirect_uris,
             client_name,
             contacts: None,
@@ -112,3 +120,13 @@ impl GnapClient {
         Uuid::new_v4()
     }
 }
+
+impl ToRedisArgs for &GnapClient {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg_fmt(serde_json::to_string(self).expect("Can't serialize GnapClient as string"))
+    }
+}
+

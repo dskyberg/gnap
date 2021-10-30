@@ -21,8 +21,6 @@ impl From<serde_json::Error> for GnapError {
     }
 }
 
-impl warp::reject::Reject for GnapError {}
-
 #[derive(Serialize)]
 pub struct ErrorResponse {
     pub message: String,

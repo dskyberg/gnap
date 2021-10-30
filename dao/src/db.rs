@@ -2,10 +2,10 @@ use futures::stream::TryStreamExt;
 use mongodb::{bson::doc, options::ClientOptions, Client, Database};
 use std::env;
 use uuid::Uuid;
-
+use log::{trace, debug};
 use errors::GnapError;
 use model::transaction::TransactionOptions;
-use model::client::GnapClient;
+use model::client::{GnapClient, GnapClientRequest};
 
 
 #[derive(Clone, Debug)]
@@ -63,31 +63,48 @@ impl GnapDB {
     }
 
     // Client methods
-    pub async fn fetch_client_by_id(&self, id: &Uuid) -> Result<GnapClient, GnapError> {
-        let cursor = self
+    pub async fn fetch_client_by_id(&self, id: &Uuid) -> Result<Option<GnapClient>, GnapError> {
+        trace!("Fetching client by ID: {}", id.to_string());
+        let cursor_result = self
             .database
             .collection::<GnapClient>("clients")
             .find_one(doc!{"client_id": &id.to_string()}, None)
             .await
-            .map_err(GnapError::DatabaseError)?;
-
-        match cursor {
-            Some(result) => Ok(result),
-            None => Err(GnapError::NotFound),
+            .map_err(GnapError::DatabaseError);
+        match cursor_result {
+            Ok(cursor) => {
+                match cursor {
+                    Some(result) => {
+                        trace!("Fetched a client");
+                        Ok(Some(result))
+                    },
+                    None => {
+                        trace!("Client not found");
+                        Err(GnapError::NotFound)
+                    },
+                }
+            },
+            Err(e) =>{
+                trace!("get_client returned en error: {:?}", e);
+                Err(e)
+            }
         }
     }
 
-    pub async fn fetch_client_by_name(&self, name: &str) -> Result<GnapClient, GnapError> {
-        let cursor = self
+    pub async fn add_client(&self, request: GnapClientRequest) -> Result<GnapClient, GnapError> {
+        let collection = self
             .database
-            .collection::<GnapClient>("clients")
-            .find_one(doc!{"client_name": name}, None)
-            .await
-            .map_err(GnapError::DatabaseError)?;
-
-        match cursor {
-            Some(result) => Ok(result),
-            None => Err(GnapError::NotFound),
+            .collection::<GnapClient>("clients");
+        let client = GnapClient::new(request.redirect_uris, request.client_name );
+        match collection.insert_one(client.clone(), None).await {
+            Ok(_) => {
+                debug!("Added client: {:?}", &client);
+                Ok(client)
+            },
+            Err(err) => {
+                debug!("Error saving client: {:?}", &err);
+                Err(GnapError::DatabaseError(err))
+            }
         }
     }
 }
