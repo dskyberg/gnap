@@ -154,6 +154,7 @@ pub struct RequestContinuation {
     // The amount of time in integer seconds
     //  the client instance SHOULD wait after receiving this continuation
     //  handle and calling the URI.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub wait: Option<u32>,
 
     // A unique access token for
@@ -165,7 +166,17 @@ pub struct RequestContinuation {
     //  contain the string bearer and the key field MUST be omitted.  The
     //  client instance MUST present the continuation access token in all
     //  requests to the continuation URI as described in Section 7.2.
-    access_token: ContinuationAccessToken
+    #[serde(skip_serializing_if = "Option::is_none")]
+    access_token: Option<ContinuationAccessToken>
+}
+impl RequestContinuation {
+    pub fn as_uri(uri: &str) -> Self {
+        RequestContinuation {
+            uri: uri.to_owned(),
+            wait: None,
+            access_token: None
+        }
+    }
 }
 
 
@@ -223,20 +234,53 @@ pub struct AccessToken {
 pub struct InteractResponse {
     #[serde(rename = "continue")]
     pub tx_continue: RequestContinuation,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub redirect: Option<String>
 
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GrantResponse {
-    instance_id: Uuid,
+    pub instance_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interact: Option<InteractResponse>
+}
 
+impl GrantResponse {
+    fn create_id() -> String {
+        Uuid::new_v4().to_string()
+    }
+
+    pub fn new() -> Self {
+        Self {
+            instance_id: Self::create_id(),
+            interact: None
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
 
     #[test]
     fn test1() {
+        let tx_id = Uuid::new_v4().to_string();
+
+        let uri = format!("http://locahost:8000/tx/{}", &tx_id);
+        let rc = RequestContinuation::as_uri(&uri.clone());
+
+        let ic = InteractResponse {
+            tx_continue: rc,
+            redirect: Some(uri)
+        };
+
+        let response = GrantResponse{
+            instance_id: tx_id,
+            interact: Some(ic)
+        };
+
+        println!("{}", serde_json::to_string(&response).expect("oops"));
         assert!(true);
     }
 }

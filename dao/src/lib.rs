@@ -4,9 +4,10 @@ use uuid::Uuid;
 use errors::GnapError;
 use model::{
     CachePath,
-    transaction::TransactionOptions,
+    transaction::{GnapTransaction, TransactionOptions},
+    grant::GrantRequest,
     client::{GnapClient, GnapClientRequest},
-    account::{Account, AccountRequest}
+    account::Account,
 };
 
 use db::GnapDB;
@@ -158,6 +159,23 @@ impl Service {
             }
         }
     }
+
+    /// Start a GNAP transaction.
+    /// This is called from the grant request handler.  The request is cached
+    /// with the transaction. Ownership of the request passes to the transaction.
+    pub async fn start_transaction(&self, request: GrantRequest) -> Result<GnapTransaction, GnapError> {
+        let mut con = self.cache_client.client.get_async_connection().await?;
+        let tx = GnapTransaction::new(Some(request));
+        let cache_key = format!("{}:{}",GnapTransaction::cache_path(), &tx.tx_id.clone());
+        let _: () = redis::pipe()
+        .atomic()
+        .set(&cache_key, &tx.clone())
+        .expire(&cache_key, 3600)
+        .query_async(&mut con)
+        .await?;
+        Ok(tx)
+    }
+
 }
 
 

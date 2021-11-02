@@ -10,6 +10,7 @@ use dao::Service;
 mod handlers;
 mod routes;
 mod utils;
+mod grant;
 
 
 /// Crate main.

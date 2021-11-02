@@ -2,6 +2,7 @@ use actix_web::{web, HttpResponse};
 use log::{trace, error};
 use dao::Service;
 use model::grant::{GrantRequest};
+use crate::grant::request::process_request;
 
 /*
 pub async fn grant_options(service: Arc<Service>) -> Result<impl warp::Reply, warp::Rejection> {
@@ -33,12 +34,16 @@ pub async fn grant_options(
     }
 }
 
-pub async fn grant_post(
-    _service: web::Data<Service>,
+/// Initiate a grant transaction
+pub async fn grant_request(
+    service: web::Data<Service>,
     request: web::Json<GrantRequest>
 ) -> HttpResponse {
-        trace!("grant_post: {:?}", request);
-        HttpResponse::Ok().json(request)
+        trace!("grant_request: {:?}", &request);
+        // Create a response from the request
+        let response = process_request(&service, request.into_inner()).await.unwrap();
+
+        HttpResponse::Ok().json(&response)
 }
 
 #[cfg(test)]

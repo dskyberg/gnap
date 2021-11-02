@@ -125,9 +125,23 @@ pub enum GnapTransactionState {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GnapTransaction {
-    tx_id: Uuid,
-    state: GnapTransactionState,
-    request: Option<GrantRequest>,
+    pub tx_id: String,
+    pub state: GnapTransactionState,
+    pub request: Option<GrantRequest>,
+}
+
+impl GnapTransaction {
+    pub fn create_id() -> String {
+        Uuid::new_v4().to_string()
+    }
+
+    pub fn new(request: Option<GrantRequest>) -> Self {
+        Self{
+            tx_id: Self::create_id(),
+            state: GnapTransactionState::Received,
+            request: request
+        }
+    }
 }
 
 impl CachePath for GnapTransaction {
