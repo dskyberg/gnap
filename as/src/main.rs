@@ -2,25 +2,15 @@ use dotenv::dotenv;
 use std::env;
 use std::net::SocketAddr;
 use actix_web::{web, middleware, App, HttpServer};
-
-use get_if_addrs;
-use log::info;
 use pretty_env_logger;
-//use log4rs;
+use log::info;
 
 use dao::Service;
 
 mod handlers;
 mod routes;
+mod utils;
 
-fn get_ip() -> String {
-    let addrs = get_if_addrs::get_if_addrs().unwrap();
-   let ips = addrs.into_iter()
-    .filter(|n| n.name != "lo0")
-    .collect::<Vec<_>>();
-
-    format!(" {:?}", ips[0].addr.ip())
-}
 
 /// Crate main.
 /// The main service needs to be async, in order to leverage async services.
@@ -30,38 +20,47 @@ async fn main() -> std::io::Result<()> {
     // normal std::env methods to access.
     dotenv().ok();
 
-    // Configure logging.  Update the log4rs.yml file to modify the config.
-    /*
-    log4rs::init_file("log4rs.yml", Default::default()).unwrap();
-    */
+    // Configure logging.  Log defaults are set in RUST_LOG env.
+    // Note:: bin namees in workspaces are strange.  Rather than `as`, this
+    // binary is call `r#as`.
     pretty_env_logger::init();
+
+    // This doesn't really havea ny value.  But fun to play with. We chould just
+    // as easily pass the string from env::var into the HttpServer.bind func.
     let api_address: SocketAddr = env::var("API_ADDRESS")
         .expect("API_ADDRESS is not set in env")
         .parse()
         .expect("API_ADDRESS is invalid");
 
-    let ip = get_ip();
+    // Get the local IP address of the non-loopback interface. This is just for
+    // displaying at startup.
+    let ip = utils::get_machine_ip();
     info!("Server is running on {:?}.  IP address is {}", api_address, ip);
-    let service = Service::create().await;
 
+    // Init the database and cache services
+    let dao_service = Service::create().await;
 
-    let addr = env::var("API_ADDRESS")
-    .expect("API_ADDRESS is not set in env");
+    // App::app_data will wrap the app state in an Arc, so it is sharable
+    let app_state =  web::Data::new(dao_service);
 
+    // Create the actix-web App instance, with middleware and routes.
     let app = move || {
         App::new()
-            // enable logger - always register actix-web Logger middleware last
-            .wrap(middleware::Logger::default())
-            .app_data(web::Data::new(service.clone()))
+            // Enable app state data, including DB and Cache stuff.
+            .app_data(app_state.clone())
+
+            // Add each of the router modules.
             .configure(routes::db::routes)
             .configure(routes::well_known::routes)
             .configure(routes::transaction::routes)
-            //.service(web::resource("/auth").route(web::post().to(handlers::authenticate)))
+
+            // enable logger - always register actix-web Logger middleware last
+            .wrap(middleware::Logger::default())
     };
 
-    // Start http server
+    // Start http server with the app
     HttpServer::new(app)
-    .bind(addr)?
+    .bind(api_address)?
     .run()
     .await
 }
