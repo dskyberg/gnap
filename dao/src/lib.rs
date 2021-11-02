@@ -3,8 +3,10 @@ use redis::{AsyncCommands, Value};
 use uuid::Uuid;
 use errors::GnapError;
 use model::{
+    CachePath,
     transaction::TransactionOptions,
-    client::{GnapClient, GnapClientRequest}
+    client::{GnapClient, GnapClientRequest},
+    account::{Account, AccountRequest}
 };
 
 use db::GnapDB;
@@ -43,8 +45,7 @@ impl Service {
     }
 
     pub async fn get_grant_options(&self) -> Result<TransactionOptions, GnapError> {
-        //let cache_key = format!("{}:{}", CACHE_KEY_PREFIX, CACHE_TX_OPTIONS);
-        let cache_key = "gnap:tx_options".to_owned();
+        let cache_key = TransactionOptions::cache_path();
         let mut con = self.cache_client.client.get_async_connection().await?;
         let cache_response = con.get(cache_key).await?;
 
@@ -75,7 +76,7 @@ impl Service {
     pub async fn add_client(&self, request: GnapClientRequest) -> Result<GnapClient, GnapError> {
         let client = self.db_client.add_client(request).await?;
         let mut con = self.cache_client.client.get_async_connection().await?;
-        let cache_key = format!("gnap:clients:{}", client.client_id.to_string()).to_owned();
+        let cache_key = format!("{}:{}",GnapClient::cache_path(), client.client_id.to_string()).to_owned();
         let _: () = redis::pipe()
         .atomic()
         .set(&cache_key, &client.clone())
@@ -89,7 +90,7 @@ impl Service {
     pub async fn get_client(&self, id: &Uuid) -> Result<Option<GnapClient>, GnapError> {
         trace!("Service - get_client");
 
-        let cache_key = format!("gnap:clients:{}", id.to_string());
+        let cache_key = format!("{}:{}", GnapClient::cache_path(), id.to_string());
         let mut con = self.cache_client.client.get_async_connection().await?;
         let cache_response = con.get(&cache_key).await?;
 
@@ -122,6 +123,41 @@ impl Service {
         }
     }
 
+    pub async fn get_account(&self, id: &Uuid) -> Result<Option<Account>, GnapError> {
+        trace!("Service - get_account");
+
+        let cache_key = format!("{}:{}", Account::cache_path(), id.to_string());
+        let mut con = self.cache_client.client.get_async_connection().await?;
+        let cache_response = con.get(&cache_key).await?;
+
+        match cache_response {
+            Value::Nil => {
+                trace!("Use database to retrieve Account");
+                let result = self.db_client.fetch_account_by_id(&id).await?;
+                if result.is_some() {
+                    let data = result.unwrap();
+                    let _: () = redis::pipe()
+                    .atomic()
+                    .set(CACHE_TX_OPTIONS, &data.clone())
+                    .expire(CACHE_TX_OPTIONS, 3600)
+                    .query_async(&mut con)
+                    .await?;
+                    Ok(Some(data))
+                }
+                else {
+                    Ok(None)
+                }
+            }
+            Value::Data(val) => {
+                trace!("Use cache to retrieve Account");
+                Ok(serde_json::from_slice(&val)?)
+            }
+            _ => {
+                debug!("Did not successfully get a cache response");
+                Err(GnapError::GeneralError)
+            }
+        }
+    }
 }
 
 

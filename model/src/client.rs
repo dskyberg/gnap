@@ -4,6 +4,7 @@ use jsonwebtoken::Algorithm;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use errors::GnapError;
+use super::CachePath;
 
 
 #[derive(Deserialize, Clone, Debug)]
@@ -118,6 +119,11 @@ impl GnapClient {
 
     pub fn create_id() -> Uuid {
         Uuid::new_v4()
+    }
+}
+impl CachePath for GnapClient {
+    fn cache_path() -> &'static str {
+        "gnap:clients"
     }
 }
 
