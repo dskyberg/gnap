@@ -57,10 +57,54 @@ const clients = [
     }
 ]
 
+const accounts = [
+    {
+        account_id: 'e63769de-3a44-11ec-8d3d-0242ac130003',
+        address: [
+            {
+                country: '000',
+                formatted: '000',
+                locality: '000',
+                postal_code: '000',
+                region: '000',
+                street_address: '000',
+            }
+        ],
+        birthdate: '1987-10-16',
+        email: [
+            {
+                address: 'johndoe@example.com',
+                verified: false,
+                primary: true,
+            },
+        ],
+        family_name: 'Doe',
+        gender: 'male',
+        given_name: 'John',
+        locale: 'en-US',
+        middle_name: 'Middle',
+        name: 'John Doe',
+        nickname: 'Johny',
+        phone: [
+            {
+                phone_number: '+49 000 000000',
+                verified: false,
+                primary: true,
+            },
+        ],
+        picture: 'http://lorempixel.com/400/200/people',
+        preferred_username: 'johnny',
+        profile: 'https://johnswebsite.com',
+        website: 'http://example.com',
+        zoneinfo: 'Europe/Berlin',
+    },
+]
+
 conn = new Mongo();
 db = conn.getDB("gnap");
 db.service_config.insertMany(config);
 db.clients.insertMany(clients);
+db.accounts.insertMany(accounts);
 
 
 
