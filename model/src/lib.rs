@@ -1,9 +1,15 @@
 pub mod transaction;
+pub mod grant;
 pub mod oauth;
 pub mod client;
 pub mod oidc;
 pub mod gnap;
 pub mod resource;
+pub mod account;
+
+pub trait CachePath {
+    fn cache_path() -> &'static str;
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,17 +1,19 @@
+use errors::GnapError;
 use futures::stream::TryStreamExt;
+use log::{debug, trace};
+use model::transaction::TransactionOptions;
+use model::{
+    account::{Account, AccountRequest},
+    client::{GnapClient, GnapClientRequest},
+};
 use mongodb::{bson::doc, options::ClientOptions, Client, Database};
 use std::env;
 use uuid::Uuid;
-use log::{trace, debug};
-use errors::GnapError;
-use model::transaction::TransactionOptions;
-use model::client::{GnapClient, GnapClientRequest};
-
 
 #[derive(Clone, Debug)]
 pub struct GnapDB {
     pub client: Client,
-    pub database: Database
+    pub database: Database,
 }
 
 //const MONGO_URI: &str = "mongodb://127.0.0.1:27017";
@@ -34,7 +36,7 @@ impl GnapDB {
         let db = client.database(&database);
         Self {
             client: client,
-            database: db
+            database: db,
         }
     }
 
@@ -68,23 +70,21 @@ impl GnapDB {
         let cursor_result = self
             .database
             .collection::<GnapClient>("clients")
-            .find_one(doc!{"client_id": &id.to_string()}, None)
+            .find_one(doc! {"client_id": &id.to_string()}, None)
             .await
             .map_err(GnapError::DatabaseError);
         match cursor_result {
-            Ok(cursor) => {
-                match cursor {
-                    Some(result) => {
-                        trace!("Fetched a client");
-                        Ok(Some(result))
-                    },
-                    None => {
-                        trace!("Client not found");
-                        Err(GnapError::NotFound)
-                    },
+            Ok(cursor) => match cursor {
+                Some(result) => {
+                    trace!("Fetched a client");
+                    Ok(Some(result))
+                }
+                None => {
+                    trace!("Client not found");
+                    Err(GnapError::NotFound)
                 }
             },
-            Err(e) =>{
+            Err(e) => {
                 trace!("get_client returned en error: {:?}", e);
                 Err(e)
             }
@@ -92,17 +92,57 @@ impl GnapDB {
     }
 
     pub async fn add_client(&self, request: GnapClientRequest) -> Result<GnapClient, GnapError> {
-        let collection = self
-            .database
-            .collection::<GnapClient>("clients");
-        let client = GnapClient::new(request.redirect_uris, request.client_name );
+        let collection = self.database.collection::<GnapClient>("clients");
+        let client = GnapClient::new(request.redirect_uris, request.client_name);
         match collection.insert_one(client.clone(), None).await {
             Ok(_) => {
                 debug!("Added client: {:?}", &client);
                 Ok(client)
-            },
+            }
             Err(err) => {
                 debug!("Error saving client: {:?}", &err);
+                Err(GnapError::DatabaseError(err))
+            }
+        }
+    }
+
+    // Client methods
+    pub async fn fetch_account_by_id(&self, id: &Uuid) -> Result<Option<Account>, GnapError> {
+        trace!("Fetching account by ID: {}", id.to_string());
+        let cursor_result = self
+            .database
+            .collection::<Account>("accounts")
+            .find_one(doc! {"account_id": &id.to_string()}, None)
+            .await
+            .map_err(GnapError::DatabaseError);
+        match cursor_result {
+            Ok(cursor) => match cursor {
+                Some(result) => {
+                    trace!("Fetched an account");
+                    Ok(Some(result))
+                }
+                None => {
+                    trace!("Account not found");
+                    Err(GnapError::NotFound)
+                }
+            },
+            Err(e) => {
+                trace!("get_account_by_id returned en error: {:?}", e);
+                Err(e)
+            }
+        }
+    }
+
+    pub async fn add_account(&self, request: AccountRequest) -> Result<Account, GnapError> {
+        let collection = self.database.collection::<Account>("accounts");
+        let account = Account::from(request);
+        match collection.insert_one(&account, None).await {
+            Ok(_) => {
+                debug!("Added account: {:?}", &account);
+                Ok(account)
+            }
+            Err(err) => {
+                debug!("Error saving account: {:?}", &err);
                 Err(GnapError::DatabaseError(err))
             }
         }

@@ -3,140 +3,12 @@
 /// All interaction with the server starts with a grant request.
 ///
 use serde::{Serialize, Deserialize};
-use serde_utils::vec_or_one::deser_one_as_vec;
 use redis::{RedisWrite, ToRedisArgs};
+use super::CachePath;
+use uuid::Uuid;
+use super::grant::GrantRequest;
 
-/// AccessToken request flags.
-///
-/// A set of flags that indicate desired
-/// attributes or behavior to be attached to the access token by the
-/// AS.  This field is OPTIONAL.
-/// The values of the "flags" field defined by this specification are as
-/// follows:
-///
-/// "bearer"  If this flag is included, the access token being requested
-///  is a bearer token.  If this flag is omitted, the access token is
-///  bound to the key used by the client instance in this request, or
-///  the key's most recent rotation.  Methods for presenting bound and
-///  bearer access tokens are described in Section 7.2.
-///
-/// "split"  If this flag is included, the client instance is capable of
-///  receiving a different number of tokens than specified in the token
-///  request (Section 2.1), including receiving multiple access tokens
-///  (Section 3.2.2) in response to any single token request
-///  (Section 2.1.1) or a different number of access tokens than
-///  requested in a multiple access token request (Section 2.1.2).  The
-///  "label" fields of the returned additional tokens are chosen by the
-///  AS.  The client instance MUST be able to tell from the token
-///  response where and how it can use each of the access tokens.  [[
-///  See issue #37 (https://github.com/ietf-wg-gnap/gnap-core-protocol/
-///  issues/37) ]]
-
-#[allow(proc_macro_derive_resolution_fallback)]
-
-
-/// Flag values MUST NOT be included more than once.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum AccessTokenFlag {
-    Bearer,
-    Split,
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
-#[serde(untagged)]
-pub enum AccessRequest {
-    Reference(String),
-    Request{
-        #[serde(rename = "type")]
-        resource_type: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        actions: Option<Vec<String>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        locations: Option<Vec<String>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        data_types: Option<Vec<String>>
-        }
-}
-
-
-/// Access Token portion of a grant request.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AccessTokenRequest {
-    /// Describes the rights that the
-    /// client instance is requesting for one or more access tokens to be
-    /// used at RS's.   This field is REQUIRED.  Section 8
-    pub access: Vec<AccessRequest>,
-    /// A unique name chosen by the client instance to refer
-    /// to the resulting access token.  The value of this field is opaque
-    /// to the AS.  If this field is included in the request, the AS MUST
-    /// include the same label in the token response (Section 3.2).  This
-    /// field is REQUIRED if used as part of a multiple access token
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub label: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub flags: Option<Vec<AccessTokenFlag>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SubjectFormatType {
-    IssSubject,
-    Opaque
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SubjectAssertionType {
-    IdToken,
-    SAML2
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SubjectRequest {
-    pub formats: Option<Vec<SubjectFormatType>>,
-    pub assertions: Option<Vec<SubjectAssertionType>>
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum InteractStartMode {
-    Redirect,
-    App,
-    UserCode
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum InteractFinishMethodType {
-    Redirect,
-    Push
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InteractFinishRequest {
-    pub method: InteractFinishMethodType,
-    pub uri: String,
-    pub nonce: String
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InteractRequest {
-    pub start: Vec<InteractStartMode>,
-    pub finish: Option<InteractFinishRequest>
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GrantRequest {
-    #[serde(deserialize_with = "deser_one_as_vec")]
-    access_token: Vec<AccessTokenRequest>,
-    subject: Option<SubjectRequest>,
-    // We will only support client reference identifiers for now
-    client: Option<String>,
-    // We will only support user ref ids for now
-    user: Option<String>,
-    interact: Option<InteractRequest>
-}
-
+//#[allow(proc_macro_derive_resolution_fallback)]
 
 pub type InteractionStartModes = Vec<String>;
 pub type InteractionFinishMethods = Vec<String>;
@@ -224,11 +96,51 @@ impl TransactionOptions {
         }
     }
 }
+
+impl CachePath for TransactionOptions {
+    fn cache_path() -> &'static str {
+        "gnap:tx_options"
+    }
+}
+
  impl ToRedisArgs for &TransactionOptions {
     fn write_redis_args<W>(&self, out: &mut W)
     where
         W: ?Sized + RedisWrite,
     {
         out.write_arg_fmt(serde_json::to_string(self).expect("Can't serialize TransactionOptions as string"))
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum GnapTransactionState {
+    Start,
+    Received,
+    ClientVerified,
+    ResourceOwnerVerified,
+
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GnapTransaction {
+    tx_id: Uuid,
+    state: GnapTransactionState,
+    request: Option<GrantRequest>,
+}
+
+impl CachePath for GnapTransaction {
+    fn cache_path() -> &'static str {
+        "gnap:tx"
+    }
+}
+
+ impl ToRedisArgs for &GnapTransaction {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg_fmt(serde_json::to_string(self).expect("Can't serialize GnapTransaction as string"))
     }
 }

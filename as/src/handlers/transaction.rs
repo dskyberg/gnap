@@ -1,7 +1,7 @@
 use actix_web::{web, HttpResponse};
 use log::{trace, error};
 use dao::Service;
-use model::transaction::{GrantRequest};
+use model::grant::{GrantRequest};
 
 /*
 pub async fn grant_options(service: Arc<Service>) -> Result<impl warp::Reply, warp::Rejection> {
