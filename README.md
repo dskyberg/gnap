@@ -3,7 +3,7 @@
 This is a learning sanbox to explore building full stack services in Rust, while
 maybe actually doing someting useful.
 
-This service is developed with Warp, Serde, Redis, and MongoDB.
+This service is developed with Actix, Serde, Redis, and MongoDB.
 
 ## Workspace Structure
 
@@ -27,7 +27,7 @@ relies heavily on serde (serde_json) to serialize/deserialize.  The lib also
 leverages Redis to manage appropriate (de)serialization for the cache.
 
 ### [as](./as)
-The GNAP Authorization Server.  This service is built with Warp.
+The GNAP Authorization Server.  This service is built with Actix.
 The handlers understand the data models as defined in the [model](./model) lib.
 
 ## Starting Mongo and Redis
@@ -66,6 +66,7 @@ MONGODB_PASSWORD=password
 MONGODB_APP_NAME=gnap
 REDIS_URI=redis://localhost
 API_ADDRESS=0.0.0.0:8000
+RUST_LOG=actix_todo=debug,actix_web=info,r#as=trace
 ````
 
 ## Run
@@ -111,6 +112,6 @@ path params, and query params managed by the route.
 
 ### Step 4:  Add the route to the routes method
 At the end of each route module, there is a `routes` function.  This function is
-called in [main](./as/src/main.rs) to construct the Warp routes.  Just
+called in [main](./as/src/main.rs) to construct the Actix routes.  Just
 follow the pattern to add your new route.
 
