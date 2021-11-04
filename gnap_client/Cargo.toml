@@ -1,0 +1,20 @@
+[package]
+name = "gnap_client"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = { version = "4.0.0-beta.10", features = ["openssl"] }
+reqwest = {version = "0.11.6", features = ["json"] }
+serde_json = "1.0.68"
+model = {path = "../model"}
+uuid = {version = "0.8.2", features = ["v4"] }
+log = "0.4.14"
+dotenv = "0.15.0"
+pretty_env_logger = "0.4.0"
+tokio = { version = "1.0", default-features = false, features = ["macros", "rt-multi-thread"] }
+
+
+

@@ -5,4 +5,5 @@ members = [
     "dao",
     "serde_utils",
     "as",
+    "gnap_client",
 ]

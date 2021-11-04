@@ -8,15 +8,14 @@ use model::{
     grant::GrantRequest,
     client::{GnapClient, GnapClientRequest},
     account::Account,
+    gnap::GnapOptions,
 };
 
 use db::GnapDB;
 use cache::GnapCache;
-use constants::*;
 
 pub mod cache;
 pub mod db;
-mod constants;
 
 #[derive(Clone)]
 pub struct Service {
@@ -45,6 +44,11 @@ impl Service {
         self.db_client.list_databases().await.expect("bug!")
     }
 
+    pub async fn clear_cache(&self) -> Result<(), GnapError> {
+        let mut con = self.cache_client.client.get_async_connection().await?;
+        con.
+    }
+
     pub async fn get_grant_options(&self) -> Result<TransactionOptions, GnapError> {
         let cache_key = TransactionOptions::cache_path();
         let mut con = self.cache_client.client.get_async_connection().await?;
@@ -52,19 +56,49 @@ impl Service {
 
         match cache_response {
             Value::Nil => {
-                debug!("Use database to retrieve TransactionOptions");
+                trace!("Use database to retrieve TransactionOptions");
                 let result = self.db_client.fetch_grant_options().await?;
                 let _: () = redis::pipe()
                     .atomic()
-                    .set(CACHE_TX_OPTIONS, &result)
-                    .expire(CACHE_TX_OPTIONS, 3600)
+                    .set(&cache_key, &result)
+                    .expire(&cache_key, 3600)
                     .query_async(&mut con)
                     .await?;
 
                 Ok(result)
             }
             Value::Data(val) => {
-                debug!("Use cache to retrieve TransactionOptions");
+                trace!("Use cache to retrieve TransactionOptions");
+                Ok(serde_json::from_slice(&val)?)
+            }
+            _ => {
+                debug!("Did not successfully get a cache response");
+                Err(GnapError::GeneralError)
+            }
+        }
+    }
+
+    pub async fn get_gnap_well_knowns(&self) -> Result<GnapOptions, GnapError> {
+        let cache_key = GnapOptions::cache_path();
+        let mut con = self.cache_client.client.get_async_connection().await?;
+        let cache_response = con.get(cache_key).await?;
+
+        match cache_response {
+            Value::Nil => {
+                trace!("Use database to retrieve GnapOptions");
+                let result = self.db_client.fetch_gnap_well_knowns().await?;
+                trace!("received {:?}", result);
+                let _: () = redis::pipe()
+                    .atomic()
+                    .set(&cache_key, &result)
+                    .expire(&cache_key, 3600)
+                    .query_async(&mut con)
+                    .await?;
+
+                Ok(result)
+            }
+            Value::Data(val) => {
+                trace!("Use cache to retrieve GnapOptions");
                 Ok(serde_json::from_slice(&val)?)
             }
             _ => {
@@ -97,14 +131,14 @@ impl Service {
 
         match cache_response {
             Value::Nil => {
-                debug!("Use database to retrieve TransactionOptions");
+                trace!("Use database to retrieve GnapClient");
                 let result = self.db_client.fetch_client_by_id(&id).await?;
                 if result.is_some() {
                     let data = result.unwrap();
                     let _: () = redis::pipe()
                     .atomic()
-                    .set(CACHE_TX_OPTIONS, &data.clone())
-                    .expire(CACHE_TX_OPTIONS, 3600)
+                    .set(&cache_key, &data.clone())
+                    .expire(&cache_key, 3600)
                     .query_async(&mut con)
                     .await?;
                     Ok(Some(data))
@@ -114,7 +148,7 @@ impl Service {
                 }
             }
             Value::Data(val) => {
-                debug!("Use cache to retrieve TransactionOptions");
+                trace!("Use cache to retrieve GnapClient");
                 Ok(serde_json::from_slice(&val)?)
             }
             _ => {
@@ -139,8 +173,8 @@ impl Service {
                     let data = result.unwrap();
                     let _: () = redis::pipe()
                     .atomic()
-                    .set(CACHE_TX_OPTIONS, &data.clone())
-                    .expire(CACHE_TX_OPTIONS, 3600)
+                    .set(&cache_key, &data.clone())
+                    .expire(&cache_key, 3600)
                     .query_async(&mut con)
                     .await?;
                     Ok(Some(data))

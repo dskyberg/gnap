@@ -1,103 +1,173 @@
 {
 	"info": {
 		"_postman_id": "6cb43500-1e0c-452f-b70f-4e5d5347dbf2",
-		"name": "Rust Warp MongoDB",
+		"name": "Rust GNAP",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "Grant Request",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"access_token\": \n        {\n            \"access\": [\n                {\n                    \"type\": \"read\"\n                }\n            ],\n            \"label\": \"my_label\",\n            \"flags\": [\"bearer\", \"split\"]\n        }\n    \n}",
-					"options": {
-						"raw": {
-							"language": "json"
+			"name": "DB",
+			"item": [
+				{
+					"name": "Get Client",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/db/client/7e057b0c-17e8-4ab4-9260-2b33f32b2cce",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"db",
+								"client",
+								"7e057b0c-17e8-4ab4-9260-2b33f32b2cce"
+							]
 						}
-					}
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "http://localhost:8000/gnap/tx",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"gnap",
-						"tx"
-					]
+				{
+					"name": "Add Client",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"redirect_uris\": [\n        \"localhost:8000\"\n    ],\n    \"client_name\": \"test_client_2\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{DB_PATH}}/client",
+							"protocol": "http",
+							"host": [
+								"{{DB_PATH}}"
+							],
+							"path": [
+								"client"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "Get databases",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8000/db/dbs",
-					"protocol": "http",
-					"host": [
-						"localhost"
+			"name": "Grants",
+			"item": [
+				{
+					"name": "Grant Options",
+					"request": {
+						"method": "OPTIONS",
+						"header": [],
+						"url": {
+							"raw": "http://{{AS_PATH}}/tx",
+							"protocol": "http",
+							"host": [
+								"{{AS_PATH}}"
+							],
+							"path": [
+								"tx"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Grant Request",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"nonce\", CryptoJS.lib.WordArray.random(10).toString());"
+								],
+								"type": "text/javascript"
+							}
+						}
 					],
-					"port": "8000",
-					"path": [
-						"db",
-						"dbs"
-					]
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"interact\": {\n        \"start\": [\n            \"redirect\"\n        ],\n        \"finish\": {\n            \"method\": \"redirect\",\n            \"uri\": \"http://localhost:3000/login\",\n            \"nonce\": \"{{nonce}}\"\n        }\n    },\n    \"access_token\": {\n        \"access\": [\n            \"foo\",\n            {\n                \"type\": \"bar\",\n                \"actions\": [\n                    \"read\",\n                    \"write\"\n                ]\n            }\n        ],\n        \"label\": \"my_label\",\n        \"flags\": [\n            \"bearer\"\n        ]\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{AS_PATH}}/tx",
+							"protocol": "http",
+							"host": [
+								"{{AS_PATH}}"
+							],
+							"path": [
+								"tx"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "Grant Options",
-			"request": {
-				"method": "OPTIONS",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8000/gnap/tx",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"gnap",
-						"tx"
-					]
+			"name": "well known",
+			"item": [
+				{
+					"name": "OIDC",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http:/{{GNAP_SERVER}}/.well-known/openid-configuration",
+							"host": [
+								"http"
+							],
+							"port": "",
+							"path": [
+								"{{GNAP_SERVER}}",
+								".well-known",
+								"openid-configuration"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GNAP",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://{{GNAP_SERVER}}/.well-known/gnap-as-rs",
+							"protocol": "http",
+							"host": [
+								"{{GNAP_SERVER}}"
+							],
+							"path": [
+								".well-known",
+								"gnap-as-rs"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
-		},
-		{
-			"name": "GNAP .well-knowns",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "localhost:8000/.well-known/gnap-as-rs",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						".well-known",
-						"gnap-as-rs"
-					]
-				}
-			},
-			"response": []
+			]
 		}
 	]
 }

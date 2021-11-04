@@ -1,24 +1,86 @@
 
 use serde::{Serialize, Deserialize};
+use redis::{RedisWrite, ToRedisArgs};
+
+use super::CachePath;
+
+pub type InteractionStartModes = Vec<String>;
+pub type InteractionFinishMethods = Vec<String>;
+pub type KeyProofs = Vec<String>;
+pub type SubjectFormats = Vec<String>;
+pub type Assertions = Vec<String>;
+pub type TokenFormats = Vec<String>;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GnapServiceEndpoints {
+    pub grant_request_endpoint: String,
+    pub introspection_endpoint: String,
+    pub resource_registration_endpoint: String,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GnapOptions {
-    grant_request_endpoint: String,
-    introspection_endpoint: String,
-    resource_registration_endpoint: String,
-    token_formats_supported: Vec<String>
-}
+    pub service_endpoints: GnapServiceEndpoints,
+    pub token_formats_supported: TokenFormats,
+    pub interaction_start_modes_supported: Option<InteractionStartModes>,
+
+    /// A list of the AS's interaction finish methods.  The values of this
+    /// list correspond to the possible values for the method element of
+    /// the interaction finish section (Section 2.5.2) of the request.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interaction_finish_methods_supported: Option<InteractionFinishMethods>,
+
+    /// A list of the AS's supported key proofing mechanisms.  The values of
+    /// this list correspond to possible values of the "proof" field of the key
+    ///  section (Section 7.1) of the request.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_proofs_supported: Option<KeyProofs>,
+
+    /// A list of the AS's supported subject identifier types.  The values
+    /// of this list correspond to possible values of the subject identifier
+    /// section (Section 2.2) of the request.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject_formats_supported: Option<SubjectFormats>,
+
+    /// A list of the AS's supported assertion formats.  The values of this
+    /// list correspond to possible values of the subject assertion section
+    /// (Section 2.2) of the request.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub assertions_supported: Option<Assertions>,
+    }
 
 impl GnapOptions {
-    pub fn new() -> Self {
+    pub fn new(base: &str) -> Self {
         GnapOptions {
-            grant_request_endpoint: "https//localhost:8000/gnap/tx".to_owned(),
-            introspection_endpoint: "https://localhost:8000/gnap/introspect".to_owned(),
-            resource_registration_endpoint: "https://localhost:8000/gnap/resource".to_owned(),
+            service_endpoints: GnapServiceEndpoints {
+            grant_request_endpoint: format!("{}/gnap/tx",base),
+            introspection_endpoint: format!("{}/gnap/introspect",base),
+            resource_registration_endpoint: format!("{}/gnap/resource",base)
+            },
             token_formats_supported: vec![
                 "jwt".to_owned(),
                 "paseto".to_owned()
-            ]
+            ],
+            interaction_start_modes_supported: None,
+            interaction_finish_methods_supported: None,
+            key_proofs_supported: None,
+            subject_formats_supported: None,
+            assertions_supported: None
         }
+    }
+}
+
+impl CachePath for GnapOptions {
+    fn cache_path() -> &'static str {
+        "gnap:well_knowns"
+    }
+}
+
+impl ToRedisArgs for &GnapOptions {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg_fmt(serde_json::to_string(self).expect("Can't serialize GnapOptions as string"))
     }
 }

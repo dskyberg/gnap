@@ -117,10 +117,11 @@ impl GnapClient {
         Ok(())
     }
 
-    pub fn create_id() -> Uuid {
+    fn create_id() -> Uuid {
         Uuid::new_v4()
     }
 }
+
 impl CachePath for GnapClient {
     fn cache_path() -> &'static str {
         "gnap:clients"

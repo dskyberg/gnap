@@ -11,6 +11,8 @@ pub enum GnapError {
     CacheError(#[from] redis::RedisError),
     #[error("Not found error")]
     NotFound,
+    #[error("Bad data error")]
+    BadData,
     #[error("General error")]
     GeneralError
 }

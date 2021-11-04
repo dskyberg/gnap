@@ -2,9 +2,10 @@ use actix_web::{web, HttpResponse};
 use log::trace;
 use dao::Service;
 use model::{
-    oidc::OpenIDConfiguration,
-    gnap::GnapOptions
+    oidc::OpenIDConfiguration
 };
+use errors::GnapError;
+
 
 /*
 pub async fn openid_config(_service: Arc<Service>) -> Result<impl warp::Reply, warp::Rejection> {
@@ -53,9 +54,20 @@ pub async fn openid_config(
 }
 
 pub async fn gnap_config(
-    _service: web::Data<Service>
+    service: web::Data<Service>
 ) -> HttpResponse {
-    let config = GnapOptions::new();
-    HttpResponse::Ok().json(config)
+    //let config = GnapOptions::new();
+    let result = service.get_gnap_well_knowns().await;
+
+    match result {
+        Ok(response) => HttpResponse::Ok().json(&response),
+        Err(err) => {
+            match err {
+                GnapError::BadData => HttpResponse::BadRequest().body("Missing GNAP options"),
+                _ => HttpResponse::InternalServerError().body(err.to_string())
+            }
+        }
+    }
+
 }
 

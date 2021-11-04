@@ -5,6 +5,7 @@ use model::transaction::TransactionOptions;
 use model::{
     account::{Account, AccountRequest},
     client::{GnapClient, GnapClientRequest},
+    gnap::GnapOptions,
 };
 use mongodb::{bson::doc, options::ClientOptions, Client, Database};
 use std::env;
@@ -47,6 +48,49 @@ impl GnapDB {
         }
     }
 
+    // Figure out how to break these out into separate mods, so this file
+    // is manageable.
+    pub async fn fetch_gnap_well_knowns(&self) -> Result<GnapOptions, GnapError> {
+        //self.update_gnap_options().await?;
+        let cursor_result = self
+            .database
+            .collection::<GnapOptions>("service_config")
+            .find(None, None)
+            .await
+            .map_err(GnapError::DatabaseError);
+        match cursor_result {
+            Ok(mut cursor) => match cursor.try_next().await {
+                Ok(Some(result)) => Ok(result),
+                Ok(None) => {
+                    trace!("GnapOptions not found");
+                    Err(GnapError::NotFound)
+                }
+                Err(e) => {
+                    trace!("{:?}", &e);
+                    Err(GnapError::DatabaseError(e))
+                },
+            },
+            Err(e) => {
+                trace!("{:?}", &e);
+                Err(e)
+            }
+        }
+    }
+
+    pub async fn update_gnap_options(&self) -> Result<GnapOptions, GnapError> {
+        let collection = self.database.collection::<GnapOptions>("service_config");
+        let options = GnapOptions::new("http://localhost:800");
+        match collection.insert_one(options.clone(), None).await {
+            Ok(_) => {
+                debug!("Added options: {:?}", &options);
+                Ok(options)
+            }
+            Err(err) => {
+                debug!("Error saving GnapOptions: {:?}", &err);
+                Err(GnapError::DatabaseError(err))
+            }
+        }
+    }
     // Figure out how to break these out into separate mods, so this file
     // is manageable.
     pub async fn fetch_grant_options(&self) -> Result<TransactionOptions, GnapError> {

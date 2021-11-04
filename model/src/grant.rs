@@ -2,6 +2,9 @@
 use serde::{Deserialize, Serialize};
 use serde_utils::vec_or_one::deser_one_as_vec;
 use uuid::Uuid;
+use super::GnapID;
+use errors::GnapError;
+use log::trace;
 
 /// AccessToken request flags.
 /// A set of flags that indicate desired
@@ -47,7 +50,7 @@ pub enum AccessTokenFlag {
 #[serde(untagged)]
 pub enum AccessRequest {
     Reference(String),
-    Request {
+    Value {
         #[serde(rename = "type")]
         resource_type: String,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -77,6 +80,16 @@ pub struct AccessTokenRequest {
     pub flags: Option<Vec<AccessTokenFlag>>,
 }
 
+impl AccessTokenRequest {
+    pub fn new() -> Self {
+        AccessTokenRequest {
+            label: None,
+            access: Vec::<AccessRequest>::new(),
+            flags: None
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SubjectFormatType {
@@ -97,11 +110,23 @@ pub struct SubjectRequest {
     pub assertions: Option<Vec<SubjectAssertionType>>,
 }
 
+// 2.5.1 Start Mode Definitions
+// This specification defines the following interaction start modes as
+// an array of string values under the start key:
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum InteractStartMode {
+    // Indicates that the client instance can direct the end-
+    //  user to an arbitrary URL for interaction.  Section 2.5.1.1
     Redirect,
+
+    // Indicates that the client instance can launch an application
+    //  on the end-user's device for interaction.  Section 2.5.1.2
     App,
+
+    // Indicates that the client instance can communicate a
+    //  human-readable short code to the end-user for use with a stable
+    //  URL.  Section 2.5.1.3
     UserCode,
 }
 
@@ -124,16 +149,48 @@ pub struct InteractRequest {
     pub finish: Option<InteractFinishRequest>,
 }
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged, rename_all = "lowercase")]
+pub enum GnapClientInstance {
+    Value {},
+    Ref(String)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GrantRequest {
     #[serde(deserialize_with = "deser_one_as_vec")]
     pub access_token: Vec<AccessTokenRequest>,
     pub subject: Option<SubjectRequest>,
     // We will only support client reference identifiers for now
-    pub client: Option<String>,
+    pub client: Option<GnapClientInstance>,
     // We will only support user ref ids for now
     pub user: Option<String>,
     pub interact: Option<InteractRequest>,
+}
+
+// The client in the request can be either by refrence - which should be
+// a client_id string, or by value, which will contain a set of info, including
+// key data.
+impl GnapID for GrantRequest {
+
+    fn parse_id(&self) -> Result<Uuid, GnapError> {
+        if let Some(client_instance) = &self.client {
+            if let super::grant::GnapClientInstance::Ref(id) = client_instance {
+                trace!("Request client is a reference");
+                if let Ok(rid) = Uuid::parse_str(&id) {
+                    return Ok(rid);
+                } else {
+                   return Err(GnapError::BadData);
+                }
+            } else {
+                trace!("Request client is a value");
+                return Err(GnapError::BadData);
+            }
+        } else{
+            return Err(GnapError::BadData);
+        }
+    }
 }
 
 
