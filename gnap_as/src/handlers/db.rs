@@ -1,4 +1,4 @@
-use dao::Service;
+use dao::service::Service;
 use uuid::Uuid;
 use actix_web::{web, HttpResponse};
 

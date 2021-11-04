@@ -26,9 +26,13 @@ All model structs, for DAO persistence, and HTTP requests/responses.  This lib
 relies heavily on serde (serde_json) to serialize/deserialize.  The lib also
 leverages Redis to manage appropriate (de)serialization for the cache.
 
-### [as](./as)
+### [gnap_as](./gnap_as)
 The GNAP Authorization Server.  This service is built with Actix.
 The handlers understand the data models as defined in the [model](./model) lib.
+
+### [gnap_client](./gnap_client)
+A simple client that can interact with the AS apis. The client leverages the
+same [model](./model) as the AS.
 
 ## Starting Mongo and Redis
 This service leverages MongoDB and Redis.  Both are run in Docker containers
@@ -115,3 +119,11 @@ At the end of each route module, there is a `routes` function.  This function is
 called in [main](./as/src/main.rs) to construct the Actix routes.  Just
 follow the pattern to add your new route.
 
+# Cache
+The service uses Redis (via Docker) for caching.  If you need
+````
+> docker exec -it redis redis-cli
+127.0.0.1:6379> FLUSHALL
+OK
+127.0.0.1:6379> exit
+````

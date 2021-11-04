@@ -1,22 +1,11 @@
+//! Transaction API Handlers
 use crate::grant::request::process_request;
 use actix_web::{web, HttpResponse};
-use dao::Service;
+use dao::service::Service;
 use log::{error, trace};
 use model::grant::GrantRequest;
 
-/*
-pub async fn grant_options(service: Arc<Service>) -> Result<impl warp::Reply, warp::Rejection> {
-
-    //let options = GrantOptions::new();
-    let options: TransactionOptions = service.get_grant_options().await?;
-    Ok(warp::reply::json(&options))
-}
-
-pub async fn grant_post(request: GrantRequest, _service: Arc<Service>) -> Result<impl warp::Reply, warp::Rejection> {
-    Ok(warp::reply::json(&request))
-}
-*/
-
+/// HTTP OPTIONS <as>/gnap/tx
 pub async fn grant_options(service: web::Data<Service>) -> HttpResponse {
     trace!("grant_options");
     match service.get_grant_options().await {
@@ -31,12 +20,12 @@ pub async fn grant_options(service: web::Data<Service>) -> HttpResponse {
     }
 }
 
+
 /// Initiate a grant transaction
 pub async fn grant_request(
     service: web::Data<Service>,
     request: web::Json<GrantRequest>,
 ) -> HttpResponse {
-
     // Create a response from the request
     let result = process_request(&service, request.into_inner()).await;
     match result {
@@ -49,7 +38,6 @@ pub async fn grant_request(
             HttpResponse::InternalServerError().body(err.to_string())
         }
     }
-
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use model::{GnapID, grant::*};
 use errors::GnapError;
-use dao::Service;
+use dao::service::Service;
 use log::{trace, error};
 
 

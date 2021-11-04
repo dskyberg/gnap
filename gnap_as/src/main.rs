@@ -5,7 +5,7 @@ use actix_web::{web, middleware, App, HttpServer};
 use pretty_env_logger;
 use log::info;
 
-use dao::Service;
+use dao::service::Service;
 
 mod handlers;
 mod routes;

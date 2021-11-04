@@ -1,4 +1,8 @@
 //! Grant Request and Response models.
+//!
+//! All the models for both requesting grants and for responding to
+//! a grant request.
+//!
 use serde::{Deserialize, Serialize};
 use serde_utils::vec_or_one::deser_one_as_vec;
 use uuid::Uuid;

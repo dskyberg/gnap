@@ -1,7 +1,7 @@
-/// Grant Request models.
-///
-/// All interaction with the server starts with a grant request.
-///
+//! Grant Request models.
+//!
+//!All interaction with the server starts with a grant request.
+//!
 use serde::{Serialize, Deserialize};
 use redis::{RedisWrite, ToRedisArgs};
 use super::CachePath;
@@ -19,7 +19,7 @@ pub type Assertions = Vec<String>;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionOptions {
     /// The location of the AS's
-    /// grant request endpoint.  The location MUST be a URL [RFC3986] with
+    /// grant request endpoint.  The location MUST be a URL [RFC3986](https://datatracker.ietf.org/doc/html/rfc3986) with
     ///  a scheme component that MUST be https, a host component, and
     ///  optionally, port, path and query components and no fragment
     ///  components.  This URL MUST match the URL the client instance used

@@ -1,3 +1,8 @@
+//! GNAP client models
+//!
+//! Representation of client capabilities for both internal AS persistence and
+//! for client/service interaction.
+//!
 use crate::oauth::{AcrValueType, ApplicationType, GrantType, ResponseType, SubjectType};
 use redis::{RedisWrite, ToRedisArgs};
 use jsonwebtoken::Algorithm;

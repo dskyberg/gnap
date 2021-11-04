@@ -1,4 +1,5 @@
-//! Resource
+//! Resource models for grant requests
+//!
 //! The Resource model can be represented as either a single string, or as an
 //! object.  Because the AccessToken model contains an array of resources (as
 //! the "access" attriute), we need to manually serialize and deserialize it.

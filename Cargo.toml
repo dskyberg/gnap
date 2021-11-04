@@ -4,6 +4,6 @@ members = [
     "model",
     "dao",
     "serde_utils",
-    "as",
+    "gnap_as",
     "gnap_client",
 ]

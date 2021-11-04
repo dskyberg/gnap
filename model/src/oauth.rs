@@ -1,4 +1,5 @@
-
+//! Some old OAuth .well-knowns models.
+//!
 use serde::{self, Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]

@@ -1,5 +1,5 @@
 [package]
-name = "as"
+name = "gnap_as"
 version = "0.1.0"
 edition = "2018"
 authors = ["David Skyberg <davidskyberg@gmail.com>"]

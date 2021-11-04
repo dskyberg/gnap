@@ -1,8 +1,13 @@
+//! User account model
+//!
+//! Account and claims related to identities.
+//!
 use redis::{RedisWrite, ToRedisArgs};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use super::CachePath;
 
+/// Snail mail address and verification status
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct AccountAddress {
     pub country: String,
@@ -14,6 +19,7 @@ pub struct AccountAddress {
     pub primary: bool,
 }
 
+/// Email address and verification status
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct EmailAddress {
     pub address: String,
@@ -21,6 +27,7 @@ pub struct EmailAddress {
     pub primary: bool,
 }
 
+/// This should never be used.  Who even does binary gendr any more?
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 #[serde(rename_all = "lowercase")]
@@ -29,6 +36,7 @@ pub enum Gender {
     Female,
 }
 
+/// Phone number and verification status
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PhoneNumber {
     phone_number: String,
@@ -36,6 +44,7 @@ pub struct PhoneNumber {
     primary: bool,
 }
 
+/// User/RO identity info
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Account {
     account_id: Uuid,
@@ -118,6 +127,7 @@ impl ToRedisArgs for &Account {
     }
 }
 
+/// Used for direct DB interaction
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct AccountRequest {
     #[serde(skip_serializing_if = "Option::is_none")]

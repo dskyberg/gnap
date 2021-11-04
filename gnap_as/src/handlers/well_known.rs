@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse};
 use log::trace;
-use dao::Service;
+use dao::service::Service;
 use model::{
     oidc::OpenIDConfiguration
 };

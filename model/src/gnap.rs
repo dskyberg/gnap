@@ -1,4 +1,8 @@
 
+//! Basic GNAP interaction models
+//!
+//! Includes models for presenting .well-known configs.
+//!
 use serde::{Serialize, Deserialize};
 use redis::{RedisWrite, ToRedisArgs};
 

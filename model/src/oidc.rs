@@ -1,5 +1,5 @@
-
 //! This follows openid-connect-discovery-1_0
+//!
 use serde::{self, Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

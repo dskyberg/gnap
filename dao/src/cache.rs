@@ -1,3 +1,5 @@
+//! Wrapper for Redis cache connections.
+//!
 use redis::aio::ConnectionManager;
 use redis::Client;
 use std::env;

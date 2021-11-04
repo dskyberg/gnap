@@ -1,3 +1,5 @@
+//! Wrapper for MongoDB connections.
+//!
 use errors::GnapError;
 use futures::stream::TryStreamExt;
 use log::{debug, trace};
