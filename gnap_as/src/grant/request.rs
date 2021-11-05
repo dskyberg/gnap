@@ -3,18 +3,6 @@ use errors::GnapError;
 use dao::service::Service;
 use log::{trace, error};
 
-
-/**
- * Interactions
- * The client can specify multiple ways for the AS to interact with the user.
- *  Redirect:  THe client is able to send the
- * "interact": {
- *    "start": ["redirect"]
- *  }
- *
- */
-
-
 pub async fn process_request(service: &Service, request: GrantRequest) -> Result<GrantResponse, GnapError> {
 
     // A valid request?
@@ -29,7 +17,7 @@ pub async fn process_request(service: &Service, request: GrantRequest) -> Result
     let client_id = request.parse_id()?;
     trace!("parsed id from request: {}", client_id.to_string());
     // This will fail if the client_id provided in the request is not found.
-    let client = service.get_client(&client_id).await?.unwrap();
+    let _client = service.get_client(&client_id).await?.unwrap();
 
     // At this point, we have determined that the request contains a valid client_id
     // and the client data was found.  Now we can compare request data against
