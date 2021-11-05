@@ -1,14 +1,29 @@
+use actix_web::web;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod};
 use std::env;
 use std::net::SocketAddr;
 
+use dao::service::Service;
+
 mod utils;
+
+/// Set up shared App state
+///
+/// Creates DB and Cache instances to be added to Actix App
+pub async fn app_state() -> web::Data<Service> {
+    // Init the database and cache services
+    let dao_service = Service::create().await;
+
+    // App::app_data will wrap the app state in an Arc, so it is sharable
+    let app_state = web::Data::new(dao_service);
+
+    app_state
+}
 
 /// Get addresses from ENV
 ///
 /// This doesn't really havea ny value.  But fun to play with. We could just
 /// as easily pass the string from env::var into the HttpServer.bind func.
-
 pub fn get_ip_addresses() -> (SocketAddr, SocketAddr, String) {
     let api_address: SocketAddr = env::var("API_ADDRESS")
         .expect("API_ADDRESS is not set in env")

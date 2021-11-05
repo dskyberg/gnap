@@ -1,11 +1,10 @@
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{middleware, App, HttpServer};
 use dotenv::dotenv;
 
 use log::info;
 use pretty_env_logger;
 
-use dao::service::Service;
-use gnap_as::{get_ip_addresses, tls_builder};
+use gnap_as::{app_state, get_ip_addresses, tls_builder};
 mod grant;
 mod handlers;
 mod routes;
@@ -29,11 +28,8 @@ async fn main() -> std::io::Result<()> {
         &api_address, &tls_address, &ip
     );
 
-    // Init the database and cache services
-    let dao_service = Service::create().await;
-
-    // App::app_data will wrap the app state in an Arc, so it is sharable
-    let app_state = web::Data::new(dao_service);
+    // Set up the shared application state
+    let app_state = app_state().await;
 
     // Create the actix-web App instance, with middleware and routes.
     let app = move || {
