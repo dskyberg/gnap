@@ -1,6 +1,7 @@
 /target
 /data
 /log
+/.keystore
 .env
 .DS_Store
 Cargo.lock
